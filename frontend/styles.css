@@ -146,6 +146,12 @@ h2 {
   line-height: 1;
 }
 
+.step[data-step="5"] h2 {
+  font-size: clamp(1.35rem, 3.2vw, 2.4rem);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
 .lead {
   max-width: 520px;
   color: #dfe2f5;
@@ -196,6 +202,12 @@ textarea:focus,
   place-items: center;
   min-height: 190px;
   cursor: pointer;
+}
+
+.upload-zone.drag-over {
+  border-color: rgba(124, 255, 155, 0.86);
+  background: rgba(124, 255, 155, 0.1);
+  box-shadow: 0 0 0 3px rgba(124, 255, 155, 0.14);
 }
 
 .upload-zone input {

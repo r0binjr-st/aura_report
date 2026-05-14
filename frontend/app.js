@@ -3,8 +3,10 @@ const form = document.querySelector("#auraForm");
 const resultPanel = document.querySelector("#resultPanel");
 const photoInput = document.querySelector("#photos");
 const photoLabel = document.querySelector("#photoLabel");
+const uploadZone = document.querySelector(".upload-zone");
 const statusLabel = document.querySelector("#statusLabel");
 const loadingMessage = document.querySelector("#loadingMessage");
+const reportCard = document.querySelector("#reportCard");
 
 const loadingMessages = [
   "слушаем, как ник кашляет в подъезде...",
@@ -44,7 +46,7 @@ document.querySelectorAll("[data-prev]").forEach((button) => {
   button.addEventListener("click", () => showStep(currentStep - 1));
 });
 
-photoInput.addEventListener("change", () => {
+function updatePhotoSelection() {
   const count = Math.min(photoInput.files.length, 3);
   photoLabel.textContent = count ? `улики приняты: ${count}` : "выбрать фото";
   if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
@@ -52,6 +54,57 @@ photoInput.addEventListener("change", () => {
   if (photoInput.files.length > 3) {
     statusLabel.textContent = "лишние фото ушли в подъезд";
   }
+}
+
+function imageFilesFromDrop(event) {
+  const items = [...(event.dataTransfer.items || [])]
+    .filter((item) => item.kind === "file")
+    .map((item) => item.getAsFile())
+    .filter(Boolean);
+  const files = items.length ? items : [...event.dataTransfer.files];
+  return files.filter((file) => file.type.startsWith("image/"));
+}
+
+function setSelectedPhotos(files, append = false) {
+  const current = append ? [...photoInput.files] : [];
+  const merged = [...current, ...files.filter((file) => file.type.startsWith("image/"))];
+  const unique = merged.filter((file, index, list) => {
+    return (
+      index ===
+      list.findIndex((candidate) => {
+        return (
+          candidate.name === file.name &&
+          candidate.size === file.size &&
+          candidate.lastModified === file.lastModified
+        );
+      })
+    );
+  });
+  const images = unique.slice(0, 3);
+  const transfer = new DataTransfer();
+  images.forEach((file) => transfer.items.add(file));
+  photoInput.files = transfer.files;
+  updatePhotoSelection();
+}
+
+photoInput.addEventListener("change", updatePhotoSelection);
+
+["dragenter", "dragover"].forEach((eventName) => {
+  uploadZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    uploadZone.classList.add("drag-over");
+  });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+  uploadZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    uploadZone.classList.remove("drag-over");
+  });
+});
+
+uploadZone.addEventListener("drop", (event) => {
+  setSelectedPhotos(imageFilesFromDrop(event), true);
 });
 
 function startLoading() {
@@ -193,6 +246,51 @@ function reportToText(report) {
   return `AURA REPORT\n@${nick}\n\nличное дело: ${report.archetype}\n\n${stats}\n\nрежим головы: ${report.mental_state}\nместо падения: ${report.location}\nкороткий приговор: ${report.diagnosis}\n\n${report.explanation}`;
 }
 
+function inlineComputedStyles(source, target) {
+  const computed = window.getComputedStyle(source);
+  const styleText = [...computed].map((name) => `${name}:${computed.getPropertyValue(name)};`).join("");
+  target.setAttribute("style", styleText);
+
+  [...source.children].forEach((child, index) => {
+    inlineComputedStyles(child, target.children[index]);
+  });
+}
+
+async function downloadReportImage() {
+  if (!lastReport || !reportCard) return;
+
+  const bounds = reportCard.getBoundingClientRect();
+  const clone = reportCard.cloneNode(true);
+  inlineComputedStyles(reportCard, clone);
+  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}">
+      <foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(clone)}</foreignObject>
+    </svg>
+  `;
+  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+  const image = new Image();
+  image.src = url;
+  await image.decode();
+
+  const scale = Math.max(2, window.devicePixelRatio || 1);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(bounds.width * scale);
+  canvas.height = Math.ceil(bounds.height * scale);
+  const context = canvas.getContext("2d");
+  context.scale(scale, scale);
+  context.drawImage(image, 0, 0);
+  URL.revokeObjectURL(url);
+
+  const link = document.createElement("a");
+  const nick = document.querySelector("#nickname").value.trim() || "unknown";
+  link.download = `aura-report-${nick.replace(/[^\w-]+/g, "_")}.png`;
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  statusLabel.textContent = "карточка скачана";
+}
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
   if (!validateStep(4)) return;
@@ -234,10 +332,11 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#copyButton").addEventListener("click", async () => {
-  if (!lastReport) return;
-  await navigator.clipboard.writeText(reportToText(lastReport));
-  statusLabel.textContent = "приговор унесен";
+document.querySelector("#downloadButton").addEventListener("click", () => {
+  downloadReportImage().catch((error) => {
+    statusLabel.textContent = "не удалось скачать карточку";
+    console.error(error);
+  });
 });
 
 document.querySelector("#againButton").addEventListener("click", () => {

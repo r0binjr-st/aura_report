@@ -51,13 +51,13 @@ async def generate_report_with_groq(
 
     prompt = (
         f"{PROMPT_PATH.read_text(encoding='utf-8')}\n\n"
-        "Return only valid JSON that matches the supplied schema.\n\n"
+        "Return only valid JSON that matches this schema exactly:\n"
+        f"{json.dumps(report_schema(), ensure_ascii=False)}\n\n"
         "INPUT:\n"
         f"Nickname:\n{nickname}\n\n"
         f"Music field, usually artists/tracks/playlists:\n{music}\n\n"
         f"Freeform text:\n{freeform_text}\n"
     )
-    schema = report_schema()
     body = {
         "model": settings.groq_model,
         "messages": [
@@ -68,14 +68,7 @@ async def generate_report_with_groq(
         ],
         "temperature": 1.0,
         "max_completion_tokens": 4096,
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "aura_report",
-                "strict": False,
-                "schema": schema,
-            },
-        },
+        "response_format": {"type": "json_object"},
     }
     url = f"{settings.groq_base_url.rstrip('/')}/chat/completions"
     headers = {
@@ -94,6 +87,12 @@ async def generate_report_with_groq(
             return validate_report(data, f"groq:{model}")
     except httpx.HTTPStatusError as exc:
         detail = exc.response.text[:1000]
+        try:
+            message = exc.response.json().get("error", {}).get("message", "")
+        except Exception:
+            message = ""
+        if "invalid key" in message.lower() or "invalid api key" in message.lower():
+            detail = "Groq API key is invalid. Rotate the key and update GROQ_API_KEY in Render environment variables."
         raise HTTPException(status_code=502, detail=f"Groq API error: {detail}") from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Groq report generation failed: {exc}") from exc
