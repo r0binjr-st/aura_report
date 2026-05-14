@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from difflib import get_close_matches
 from typing import Any
 
 from backend.app.schemas.aura import AuraReport, LOCATIONS, MENTAL_STATES, STAT_NAMES, TRAIT_NAMES, Observations
@@ -62,16 +63,24 @@ def clamp_float(value: Any) -> float:
     return round(max(0.0, min(1.0, float(value))), 3)
 
 
+def coerce_choice(value: Any, allowed: list[str], fallback: str) -> str:
+    text = str(value).strip()
+    if text in allowed:
+        return text
+
+    lowered = {choice.casefold(): choice for choice in allowed}
+    if text.casefold() in lowered:
+        return lowered[text.casefold()]
+
+    matches = get_close_matches(text, allowed, n=1, cutoff=0.55)
+    return matches[0] if matches else fallback
+
+
 def validate_report(data: dict[str, Any], source: str) -> AuraReport:
     stats = {name: clamp_int(data["stats"][name]) for name in STAT_NAMES}
     hidden_traits = {name: clamp_float(data["hidden_traits"][name]) for name in TRAIT_NAMES}
-    mental_state = data["mental_state"]
-    location = data["location"]
-
-    if mental_state not in MENTAL_STATES:
-        raise ValueError(f"{source} returned invalid mental_state")
-    if location not in LOCATIONS:
-        raise ValueError(f"{source} returned invalid location")
+    mental_state = coerce_choice(data.get("mental_state"), MENTAL_STATES, MENTAL_STATES[0])
+    location = coerce_choice(data.get("location"), LOCATIONS, LOCATIONS[0])
 
     return AuraReport(
         stats=stats,

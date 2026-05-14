@@ -53,6 +53,8 @@ async def generate_report_with_groq(
         f"{PROMPT_PATH.read_text(encoding='utf-8')}\n\n"
         "Return only valid JSON that matches this schema exactly:\n"
         f"{json.dumps(report_schema(), ensure_ascii=False)}\n\n"
+        "For mental_state and location, copy one enum value exactly. "
+        "For stats and hidden_traits, include every required key exactly as written.\n\n"
         "INPUT:\n"
         f"Nickname:\n{nickname}\n\n"
         f"Music field, usually artists/tracks/playlists:\n{music}\n\n"
