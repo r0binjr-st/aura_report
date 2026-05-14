@@ -7,6 +7,7 @@ const uploadZone = document.querySelector(".upload-zone");
 const statusLabel = document.querySelector("#statusLabel");
 const loadingMessage = document.querySelector("#loadingMessage");
 const reportCard = document.querySelector("#reportCard");
+const AURA_SESSION_KEY = "aura-report-session";
 
 const loadingMessages = [
   "слушаем, как ник кашляет в подъезде...",
@@ -27,6 +28,7 @@ let photoPreviewUrl = null;
 function showStep(index) {
   currentStep = Math.max(0, Math.min(index, steps.length - 1));
   steps.forEach((step) => step.classList.toggle("active", Number(step.dataset.step) === currentStep));
+  saveAuraSession();
 }
 
 function validateStep(index) {
@@ -44,6 +46,23 @@ document.querySelectorAll("[data-next]").forEach((button) => {
 
 document.querySelectorAll("[data-prev]").forEach((button) => {
   button.addEventListener("click", () => showStep(currentStep - 1));
+});
+
+form.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || event.shiftKey) return;
+
+  const submitStep = currentStep === 4;
+  if (!submitStep && currentStep < 2) return;
+
+  event.preventDefault();
+  if (!validateStep(currentStep)) return;
+
+  if (submitStep) {
+    form.requestSubmit();
+    return;
+  }
+
+  showStep(currentStep + 1);
 });
 
 function updatePhotoSelection() {
@@ -236,6 +255,7 @@ function renderReport(report) {
   showStep(6);
   resultPanel.hidden = false;
   statusLabel.textContent = report.analysis_source || "report generated";
+  saveAuraSession();
 }
 
 function reportToText(report) {
@@ -244,6 +264,51 @@ function reportToText(report) {
     .map(([name, value]) => `${name}: ${value}%`)
     .join("\n");
   return `AURA REPORT\n@${nick}\n\nличное дело: ${report.archetype}\n\n${stats}\n\nрежим головы: ${report.mental_state}\nместо падения: ${report.location}\nкороткий приговор: ${report.diagnosis}\n\n${report.explanation}`;
+}
+
+function formSnapshot() {
+  return {
+    nickname: document.querySelector("#nickname").value,
+    music: document.querySelector("#music").value,
+    freeform_text: document.querySelector("#freeform_text").value,
+  };
+}
+
+function restoreFormSnapshot(values = {}) {
+  document.querySelector("#nickname").value = values.nickname || "";
+  document.querySelector("#music").value = values.music || "";
+  document.querySelector("#freeform_text").value = values.freeform_text || "";
+}
+
+function saveAuraSession() {
+  sessionStorage.setItem(
+    AURA_SESSION_KEY,
+    JSON.stringify({
+      step: currentStep,
+      form: formSnapshot(),
+      report: lastReport,
+      resultVisible: !resultPanel.hidden,
+    })
+  );
+}
+
+function restoreAuraSession() {
+  const raw = sessionStorage.getItem(AURA_SESSION_KEY);
+  if (!raw) return false;
+
+  try {
+    const saved = JSON.parse(raw);
+    restoreFormSnapshot(saved.form);
+    if (saved.report && saved.resultVisible) {
+      renderReport(saved.report);
+      return true;
+    }
+    showStep(saved.step || 0);
+    return true;
+  } catch {
+    sessionStorage.removeItem(AURA_SESSION_KEY);
+    return false;
+  }
 }
 
 function inlineComputedStyles(source, target) {
@@ -341,8 +406,13 @@ document.querySelector("#downloadButton").addEventListener("click", () => {
 
 document.querySelector("#againButton").addEventListener("click", () => {
   resultPanel.hidden = true;
+  lastReport = null;
   showStep(1);
   statusLabel.textContent = "новое дело открыто";
 });
 
-showStep(0);
+form.addEventListener("input", saveAuraSession);
+
+if (!restoreAuraSession()) {
+  showStep(0);
+}
