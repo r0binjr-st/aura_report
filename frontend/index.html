@@ -1,0 +1,158 @@
+﻿<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aura Report</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace">
+        <div class="brand">
+          <span class="brand-mark">AURA</span>
+          <span class="brand-status" id="statusLabel">special for TRAX</span>
+          <a class="brand-link" href="/glossary.html">словарь характеристик</a>
+        </div>
+
+        <div class="scanner" aria-hidden="true">
+          <div class="scanner-line"></div>
+        </div>
+
+        <section class="step active" data-step="0">
+          <p class="eyebrow">позор 27.09.2024</p>
+          <h1>AURA REPORT</h1>
+          <p class="lead">ИИ посмотрит на анкету оценит ауру.</p>
+          <button class="primary" data-next>заполнить анкету</button>
+        </section>
+
+        <form id="auraForm">
+          <section class="step" data-step="1">
+            <p class="eyebrow">шаг 01 / на лицо</p>
+            <h2>Кинь 1-3 фото для суда ауры</h2>
+            <p class="hint">селфи, зеркало, ночь, или ассоциация с тобой</p>
+            <label class="upload-zone">
+              <input id="photos" name="photos" type="file" accept="image/*" multiple />
+              <span class="upload-icon">+</span>
+              <span id="photoLabel">выбрать фото</span>
+            </label>
+            <div class="actions">
+              <button type="button" class="ghost" data-prev>назад</button>
+              <button type="button" class="primary" data-next>добавить</button>
+            </div>
+          </section>
+
+          <section class="step" data-step="2">
+            <p class="eyebrow">шаг 02 / ник</p>
+            <h2>Введи свой ник</h2>
+            <input id="nickname" name="nickname" required placeholder="shadow.exe" autocomplete="off" />
+            <div class="actions">
+              <button type="button" class="ghost" data-prev>назад</button>
+              <button type="button" class="primary" data-next>прикрепить</button>
+            </div>
+          </section>
+
+          <section class="step" data-step="3">
+            <p class="eyebrow">шаг 03 / плейлист на оценку</p>
+            <h2>Какая музыка тебе нравится?</h2>
+            <textarea id="music" name="music" required placeholder="deftones, yeat, crystal castles, phonk&#10;&#10;артисты, треки, плейлист, soundcloud-вкус или тикток-философия"></textarea>
+            <div class="actions">
+              <button type="button" class="ghost" data-prev>назад</button>
+              <button type="button" class="primary" data-next>занести в анкету</button>
+            </div>
+          </section>
+
+          <section class="step" data-step="4">
+            <p class="eyebrow">шаг 04 / твоя речь</p>
+            <h2>Опиши себя коротко<br />или обвини создателя Aura Report</h2>
+            <textarea
+              id="freeform_text"
+              name="freeform_text"
+              required
+              placeholder="я норм, просто иногда ухожу в запой&#10;&#10;или&#10;&#10;создатель явно долбоеб"
+            ></textarea>
+            <div class="actions">
+              <button type="button" class="ghost" data-prev>назад</button>
+              <button type="submit" class="primary">узнать aura report</button>
+            </div>
+          </section>
+        </form>
+
+        <section class="step" data-step="5">
+          <p class="eyebrow">шаг 05 / экспертиза</p>
+          <h2 id="loadingMessage">измеряем арку злодея...</h2>
+          <div class="progress-shell">
+            <div class="progress-fill"></div>
+          </div>
+        </section>
+
+        <section class="step final-side" data-step="6">
+          <p class="eyebrow">вещественное доказательство</p>
+          <h2>ФОТО<br />ЗАГРУЖЕНО</h2>
+          <figure class="photo-evidence">
+            <img id="uploadedPhotoPreview" alt="Загруженное пользователем фото" />
+            <figcaption id="uploadedPhotoCaption">кадр внесен в дело, дверь закрыта</figcaption>
+          </figure>
+          <div class="aura-note">
+            <p class="eyebrow">почему это вообще здесь</p>
+            <p>
+              <span id="auraNoteText">
+                Машина склеивает фото, ник и плейлист в один мокрый протокол перегрева.
+              </span>
+            </p>
+            <p>
+              <span id="auraNoteLegend">
+                Рулит не среднее, а самый громкий симптом: плащ, друн, М М или хомяк.
+              </span>
+            </p>
+          </div>
+        </section>
+      </section>
+
+      <aside class="result-panel" id="resultPanel" hidden>
+        <article class="report-card" id="reportCard">
+          <div class="report-head">
+            <div>
+              <p class="eyebrow">AURA REPORT / приговор</p>
+              <h2 id="resultNickname">@unknown.exe</h2>
+            </div>
+            <span class="stamp">подписано TRAX</span>
+          </div>
+
+          <div class="title-block">
+            <span>личное дело</span>
+            <strong id="archetype">полуночный дискорд-злодей</strong>
+          </div>
+
+          <div class="stats" id="stats"></div>
+
+          <div class="result-grid">
+            <div>
+              <span>режим головы</span>
+              <strong id="mentalState"></strong>
+            </div>
+            <div>
+              <span>место падения</span>
+              <strong id="location"></strong>
+            </div>
+          </div>
+
+          <div class="diagnosis">
+            <span>короткий приговор</span>
+            <strong id="diagnosis"></strong>
+          </div>
+
+          <div class="explanation" id="explanation"></div>
+        </article>
+
+        <div class="share-row">
+          <button class="ghost" id="copyButton" type="button">скопировать текст</button>
+          <button class="primary" id="againButton" type="button">новый report</button>
+        </div>
+      </aside>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: aura-report-trax
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.13
+      - key: LLM_PROVIDER
+        value: groq
+      - key: GROQ_MODEL
+        value: meta-llama/llama-4-scout-17b-16e-instruct
+      - key: GROQ_API_KEY
+        sync: false
