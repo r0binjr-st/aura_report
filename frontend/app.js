@@ -312,9 +312,11 @@ function restoreAuraSession() {
 }
 
 async function downloadReportImage() {
-  if (!lastReport || !reportCard) return;
+  if (!lastReport) return;
 
-  const canvas = await html2canvas(reportCard, {
+  const shell = document.querySelector(".shell");
+
+  const canvas = await html2canvas(shell, {
     scale: Math.max(2, window.devicePixelRatio || 1),
     useCORS: true,
     allowTaint: false,
