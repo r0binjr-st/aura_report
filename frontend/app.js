@@ -311,42 +311,15 @@ function restoreAuraSession() {
   }
 }
 
-function inlineComputedStyles(source, target) {
-  const computed = window.getComputedStyle(source);
-  const styleText = [...computed].map((name) => `${name}:${computed.getPropertyValue(name)};`).join("");
-  target.setAttribute("style", styleText);
-
-  [...source.children].forEach((child, index) => {
-    inlineComputedStyles(child, target.children[index]);
-  });
-}
-
 async function downloadReportImage() {
   if (!lastReport || !reportCard) return;
 
-  const bounds = reportCard.getBoundingClientRect();
-  const clone = reportCard.cloneNode(true);
-  inlineComputedStyles(reportCard, clone);
-  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}">
-      <foreignObject width="100%" height="100%">${new XMLSerializer().serializeToString(clone)}</foreignObject>
-    </svg>
-  `;
-  const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
-  const image = new Image();
-  image.src = url;
-  await image.decode();
-
-  const scale = Math.max(2, window.devicePixelRatio || 1);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.ceil(bounds.width * scale);
-  canvas.height = Math.ceil(bounds.height * scale);
-  const context = canvas.getContext("2d");
-  context.scale(scale, scale);
-  context.drawImage(image, 0, 0);
-  URL.revokeObjectURL(url);
+  const canvas = await html2canvas(reportCard, {
+    scale: Math.max(2, window.devicePixelRatio || 1),
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: null,
+  });
 
   const link = document.createElement("a");
   const nick = document.querySelector("#nickname").value.trim() || "unknown";
